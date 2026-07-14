@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-dotenv
+requests
+pymupdf
+pytesseract
+Pillow
+chromadb
+langchain-text-splitters
+google-genai
+ollama
+python-multipart
+pandas
