@@ -55,7 +55,16 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
 
     return embeddings
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chroma_db")
+# DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chroma_db")
+# chroma = chromadb.PersistentClient(path=DB_PATH)
+
+DB_PATH = os.getenv(
+    "CHROMA_DB_PATH",
+    "/opt/render/project/src/chroma_db"
+)
+
+os.makedirs(DB_PATH, exist_ok=True)
+
 chroma = chromadb.PersistentClient(path=DB_PATH)
 
 collection = chroma.get_or_create_collection(
@@ -89,7 +98,7 @@ def extract_content(file_path: str) -> str:
 # ---------- METADATA EXTRACTION (LLM) ----------
 def extract_metadata(document_text: str) -> dict:
     prompt = f"""
-Extract metadata from the medical document.
+Extract metadata from the medical document. If a piece of information is not present in the document, use null.
 
 Return ONLY valid JSON.
 
@@ -98,6 +107,15 @@ Schema:
     "title": "",
     "document_type": "",
     "specialty": "",
+    "patient_name": "",
+    "age": "",
+    "gender": "",
+    "diagnosis": "",
+    "symptoms": [],
+    "medications": [],
+    "doctor": "",
+    "hospital": "",
+    "date": "",
     "disease": [],
     "keywords": [],
     "summary": ""
@@ -249,11 +267,35 @@ async def download_document(request: DownloadRequest):
         logger.info("Stored document_id=%s chunks=%d", document_id, chunk_count)
 
         return {
-            "success": True,
-            "file_path": file_path,
+            "status": "Success",
             "document_id": document_id,
-            "chunks_stored": chunk_count,
-            "metadata": metadata,
+            "document_type": metadata.get("document_type", "PDF"),
+            "embedding_generated": True,
+            "stored_in_chromadb": True,
+            "chromadb_collection": "medical_documents",
+            "metadata": {
+                "file_name": filename,
+                "file_type": "pdf",
+                "processing_status": "Success",
+                "title": metadata.get("title", ""),
+                "specialty": metadata.get("specialty", ""),
+                "disease": metadata.get("disease", ""),
+                "keywords": metadata.get("keywords", ""),
+                "summary": metadata.get("summary", ""),
+            },
+            "document": {
+                "patient_name": metadata.get("patient_name"),
+                "age": metadata.get("age"),
+                "gender": metadata.get("gender"),
+                "document_type": metadata.get("document_type", "Report"),
+                "diagnosis": metadata.get("diagnosis"),
+                "symptoms": metadata.get("symptoms"),
+                "medications": metadata.get("medications"),
+                "doctor": metadata.get("doctor"),
+                "hospital": metadata.get("hospital"),
+                "date": metadata.get("date"),
+                "raw_text": extracted_text
+            }
         }
 
     except Exception as e:
