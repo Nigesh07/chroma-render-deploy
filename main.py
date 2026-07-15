@@ -55,8 +55,6 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
 
     return embeddings
 
-# DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chroma_db")
-# chroma = chromadb.PersistentClient(path=DB_PATH)
 
 DB_PATH = os.getenv(
     "CHROMA_DB_PATH",
@@ -70,6 +68,7 @@ chroma = chromadb.PersistentClient(path=DB_PATH)
 collection = chroma.get_or_create_collection(
     name="medical_documents"
 )
+
 
 app = FastAPI()
 
@@ -132,7 +131,7 @@ Document:
             logger.info("Calling Gemini attempt=%d", attempt + 1)
 
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-2.5-flash-lite",
                 contents=prompt,
             )
 
