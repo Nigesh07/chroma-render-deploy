@@ -72,6 +72,13 @@ collection = chroma.get_or_create_collection(
 
 app = FastAPI()
 
+@app.get("/")
+def home():
+    return {
+        "status": "success",
+        "message": "Medical RAG API is running."
+    }
+
 class DownloadRequest(BaseModel):
     url: str
 
@@ -193,6 +200,10 @@ def store_document(document_text: str, file_name: str, metadata: dict) -> tuple[
     return document_id, len(chunks)
 
 # ---------- MAIN ENDPOINT ----------
+@app.get("/download-document")
+async def download_document_get(url: str):
+    return await download_document(DownloadRequest(url=url))
+
 @app.post("/download-document")
 async def download_document(request: DownloadRequest):
     try:
@@ -305,6 +316,10 @@ class SearchRequest(BaseModel):
     query: str
     top_k: int = 5
 
+@app.get("/search-medical-documents")
+def search_medical_documents_get(query: str, top_k: int = 5):
+    return search_medical_documents(SearchRequest(query=query, top_k=top_k))
+
 @app.post("/search-medical-documents")
 def search_medical_documents(request: SearchRequest):
     try:
@@ -396,6 +411,10 @@ def process_csv_in_background(limit: int):
             logger.error(f"Failed to embed/upsert final batch: {e}")
             
     logger.info("Finished background CSV ingestion process.")
+
+@app.get("/ingest-csv-dataset")
+async def ingest_csv_dataset_get(background_tasks: BackgroundTasks, limit: int = 10):
+    return await ingest_csv_dataset(CsvIngestRequest(limit=limit), background_tasks)
 
 @app.post("/ingest-csv-dataset")
 async def ingest_csv_dataset(request: CsvIngestRequest, background_tasks: BackgroundTasks):
